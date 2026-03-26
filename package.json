@@ -1,0 +1,29 @@
+{
+  "name": "agent-ruler",
+  "version": "0.1.0",
+  "description": "Rule enforcement system for Claude Code — generates and enforces rules from CLAUDE.md and SKILL.md via hooks",
+  "type": "module",
+  "bin": {
+    "agent-ruler": "dist/cli.js"
+  },
+  "files": ["dist", "README.md", "LICENSE"],
+  "scripts": {
+    "build": "bun build src/cli.ts --outdir dist --target bun --splitting",
+    "test": "bun test",
+    "prepublishOnly": "bun run build"
+  },
+  "keywords": ["claude", "claude-code", "hooks", "rules", "enforcement", "ai"],
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/chebykinn/agent-ruler.git",
+    "directory": "agent-ruler"
+  },
+  "dependencies": {
+    "@anthropic-ai/claude-agent-sdk": "^0.2.2"
+  },
+  "devDependencies": {
+    "@types/bun": "^1.2.18",
+    "typescript": "^5"
+  }
+}
