@@ -41,7 +41,7 @@ async function main(): Promise<void> {
   const command = args[0];
 
   if (!command || command === '--help' || command === '-h') {
-    console.log(USAGE);
+    console.error(USAGE);
     process.exit(0);
   }
 
@@ -82,7 +82,7 @@ async function main(): Promise<void> {
       break;
     default:
       console.error(`Unknown command: ${command}`);
-      console.log(USAGE);
+      console.error(USAGE);
       process.exit(1);
   }
 }
