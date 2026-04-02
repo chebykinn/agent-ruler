@@ -32,6 +32,9 @@ async function generateRulesForSource(source: RuleSource, projectRoot: string): 
       maxTurns: 50,
       allowedTools: ['Read', 'Glob', 'Grep', 'Write', 'Bash', 'Edit'],
       systemPrompt,
+      stderr: (data: string) => {
+        if (data.trim()) console.error(`  [${source.label}] stderr: ${data.trim()}`);
+      },
     },
   });
 
@@ -89,6 +92,9 @@ export async function fixRules(
       maxTurns: 50,
       allowedTools: ['Read', 'Write', 'Edit', 'Bash'],
       systemPrompt: 'You are a checker script fixer. Fix the checker scripts based on the problem description. All file paths are relative to the .claude/ directory (your cwd). Test your fixes before finalizing.',
+      stderr: (data: string) => {
+        if (data.trim()) console.error(`  [fix] stderr: ${data.trim()}`);
+      },
     },
   });
 

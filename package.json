@@ -1,6 +1,6 @@
 {
   "name": "agent-ruler",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Rule enforcement system for Claude Code — generates and enforces rules from CLAUDE.md and SKILL.md via hooks",
   "type": "module",
   "bin": {
@@ -8,7 +8,7 @@
   },
   "files": ["dist", "README.md", "LICENSE"],
   "scripts": {
-    "build": "bun build src/cli.ts --outdir dist --target bun --splitting",
+    "build": "bun build src/cli.ts --outdir dist --target bun --splitting --external @anthropic-ai/claude-agent-sdk",
     "test": "bun test",
     "prepublishOnly": "bun run build"
   },
@@ -20,7 +20,8 @@
     "directory": "agent-ruler"
   },
   "dependencies": {
-    "@anthropic-ai/claude-agent-sdk": "^0.2.2"
+    "@anthropic-ai/claude-agent-sdk": "^0.2.2",
+    "commander": "^13.0.0"
   },
   "devDependencies": {
     "@types/bun": "^1.2.18",
