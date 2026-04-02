@@ -5,8 +5,64 @@ import type { Rule, RuleSource, RulesFile } from './types';
 import { hashFile, loadRulesFile } from './storage';
 import { buildSystemPrompt, buildUserPrompt, buildFixPrompt } from './prompt';
 
-export async function generateRules(sources: RuleSource[], projectRoot: string): Promise<void> {
-  await Promise.all(sources.map((source) => generateRulesForSource(source, projectRoot)));
+const LOCK_FILE = '/tmp/agent-ruler-generating.lock';
+const LOCK_MAX_AGE_MS = 10 * 60 * 1000; // 10 minutes
+
+async function acquireLock(): Promise<boolean> {
+  try {
+    const stat = await fs.stat(LOCK_FILE);
+    if (Date.now() - stat.mtimeMs < LOCK_MAX_AGE_MS) {
+      return false;
+    }
+    await fs.unlink(LOCK_FILE).catch(() => {});
+  } catch {
+    // no lock file exists
+  }
+
+  try {
+    await fs.writeFile(LOCK_FILE, String(process.pid), { flag: 'wx' });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+async function releaseLock(): Promise<void> {
+  await fs.unlink(LOCK_FILE).catch(() => {});
+}
+
+export const DEFAULT_MAX_PARALLEL = 3;
+
+export async function generateRules(
+  sources: RuleSource[],
+  projectRoot: string,
+  maxParallel: number = DEFAULT_MAX_PARALLEL,
+): Promise<void> {
+  const locked = await acquireLock();
+  if (!locked) {
+    console.error('[agent-ruler] Generation already in progress (lock held), skipping.');
+    return;
+  }
+
+  try {
+    const queue = [...sources];
+    const running: Promise<void>[] = [];
+
+    while (queue.length > 0 || running.length > 0) {
+      while (running.length < maxParallel && queue.length > 0) {
+        const source = queue.shift()!;
+        const p = generateRulesForSource(source, projectRoot).then(() => {
+          running.splice(running.indexOf(p), 1);
+        });
+        running.push(p);
+      }
+      if (running.length > 0) {
+        await Promise.race(running);
+      }
+    }
+  } finally {
+    await releaseLock();
+  }
 }
 
 async function loadExistingRules(source: RuleSource): Promise<Rule[]> {
