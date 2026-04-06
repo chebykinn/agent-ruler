@@ -28,10 +28,9 @@ program
   .description('Install hooks into .claude/settings.json and generate rules')
   .option('--project <dir>', 'Project root (default: auto-detect from cwd)')
   .option('--force', 'Regenerate all rules, even if sources haven\'t changed')
-  .option('--max-parallel <n>', 'Max parallel Claude instances for generation', parseInt)
   .action(async (opts) => {
     const projectRoot = opts.project ? path.resolve(opts.project) : resolveProjectRoot();
-    await cmdEnforce(projectRoot, opts.force ?? false, opts.maxParallel);
+    await cmdEnforce(projectRoot, opts.force ?? false);
   });
 
 program
@@ -39,10 +38,9 @@ program
   .description('Generate/regenerate checker scripts from CLAUDE.md and SKILL.md')
   .option('--project <dir>', 'Project root (default: auto-detect from cwd)')
   .option('--force', 'Regenerate all rules, even if sources haven\'t changed')
-  .option('--max-parallel <n>', 'Max parallel Claude instances for generation', parseInt)
   .action(async (opts) => {
     const projectRoot = opts.project ? path.resolve(opts.project) : resolveProjectRoot();
-    await cmdCompile(projectRoot, opts.force ?? false, opts.maxParallel);
+    await cmdCompile(projectRoot, opts.force ?? false);
   });
 
 program
@@ -115,7 +113,7 @@ program
     await cmdHook(projectRoot);
   });
 
-async function cmdEnforce(projectRoot: string, force: boolean, maxParallel?: number): Promise<void> {
+async function cmdEnforce(projectRoot: string, force: boolean): Promise<void> {
   const fs = await import('fs/promises');
   const settingsPath = path.join(projectRoot, '.claude/settings.json');
   const hookCmd = `${process.argv[1]} hook`;
@@ -150,10 +148,10 @@ async function cmdEnforce(projectRoot: string, force: boolean, maxParallel?: num
   await fs.writeFile(settingsPath, JSON.stringify(settings, null, 2) + '\n');
   console.log(`Wrote ${settingsPath}\n`);
 
-  await cmdCompile(projectRoot, force, maxParallel);
+  await cmdCompile(projectRoot, force);
 }
 
-async function cmdCompile(projectRoot: string, force: boolean, maxParallel?: number): Promise<void> {
+async function cmdCompile(projectRoot: string, force: boolean): Promise<void> {
   console.log(`Project root: ${projectRoot}`);
   const sources = await getAllRuleSources(projectRoot);
   console.log(`Found ${sources.length} rule source(s)`);
@@ -170,7 +168,7 @@ async function cmdCompile(projectRoot: string, force: boolean, maxParallel?: num
     console.log(`  - ${s.label}`);
   }
 
-  await generateRules(toGenerate, projectRoot, maxParallel);
+  await generateRules(toGenerate, projectRoot);
   console.log('Done.');
 }
 

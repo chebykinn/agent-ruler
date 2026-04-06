@@ -1,6 +1,5 @@
 import type { HookEvent, HookResponse } from '../types';
-import { getAllRuleSources, getStaleSources } from '../storage';
-import { generateRules } from '../generate';
+import { getAllRuleSources } from '../storage';
 import { enforce } from '../enforce';
 import { loadState, saveState, syncSkillsFromTranscript } from '../state';
 
@@ -19,17 +18,6 @@ export async function handlePreToolUse(event: HookEvent, projectRoot: string): P
 
   try {
     const sources = await getAllRuleSources(projectRoot);
-
-    // Regenerate stale sources — isolated so generation failures
-    // don't kill enforcement of existing rules
-    try {
-      const stale = await getStaleSources(sources);
-      if (stale.length > 0) {
-        await generateRules(stale, projectRoot);
-      }
-    } catch (genErr) {
-      console.error('[agent-ruler] Rule generation failed (enforcing with existing rules):', genErr);
-    }
 
     // Sync skills from transcript (Skill tool doesn't trigger hooks)
     if (event.transcript_path) {
