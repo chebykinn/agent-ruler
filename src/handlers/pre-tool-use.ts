@@ -3,6 +3,12 @@ import { getAllRuleSources } from '../storage';
 import { enforce } from '../enforce';
 import { loadState, saveState, syncSkillsFromTranscript } from '../state';
 
+/**
+ * PreToolUse handler — reserved for preventing irreversible damage.
+ * Most rules now default to post-hook. Only rules explicitly marked
+ * hook_event: 'pre' fire here (e.g., blocking reads of sensitive files,
+ * destructive Bash commands missing --dry-run, deploys without confirmation).
+ */
 export async function handlePreToolUse(event: HookEvent, projectRoot: string): Promise<HookResponse> {
   const toolName = event.tool_name || '';
   const toolInput = event.tool_input || {};

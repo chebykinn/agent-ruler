@@ -44,13 +44,15 @@ export interface SessionState {
 }
 
 export interface HookEvent {
-  hook_event_name: 'PreToolUse' | 'PostToolUse' | 'Stop';
+  hook_event_name: 'SessionStart' | 'UserPromptSubmit' | 'PreToolUse' | 'PostToolUse' | 'Stop';
   tool_name?: string;
   tool_input?: Record<string, unknown>;
   tool_response?: unknown;
   session_id: string;
   transcript_path?: string;
   cwd?: string;
+  /** User's prompt text (available in UserPromptSubmit events) */
+  prompt?: string;
 }
 
 export interface CheckResult {

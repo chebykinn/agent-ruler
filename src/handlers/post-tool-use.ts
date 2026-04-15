@@ -1,4 +1,4 @@
-import type { HookEvent, HookResponse, EnforcementLogEntry } from '../types';
+import type { HookEvent, HookResponse } from '../types';
 import { loadState, saveState } from '../state';
 import { getAllRuleSources } from '../storage';
 import { enforce } from '../enforce';
@@ -22,30 +22,7 @@ export async function handlePostToolUse(event: HookEvent, projectRoot: string): 
 
     const sources = await getAllRuleSources(projectRoot);
 
-    // Fallback: if pre-enforcement didn't run for this tool call,
-    // run pre-rules now so they aren't silently skipped
-    const lastPreEntry = findLastPreEntry(state.log, toolName);
-    if (!lastPreEntry) {
-      console.error(`[agent-ruler] No pre-entry found for ${toolName}, running pre-rules as fallback`);
-      const preResult = await enforce(toolName, toolInput, sources, state, {
-        transcriptPath: event.transcript_path,
-        sessionId: event.session_id,
-        hookEvent: 'pre',
-      });
-
-      if (preResult.logEntry) {
-        (preResult.logEntry as any).fallback = true;
-        state.log.push(preResult.logEntry);
-      }
-
-      if (!preResult.allowed) {
-        const reasons = preResult.violations.map((v) => v.message).join('; ');
-        await saveState(event.session_id, state);
-        return { decision: 'block', reason: `[fallback] ${reasons}` };
-      }
-    }
-
-    // Run post-hook enforcement
+    // Run post-hook enforcement (most rules now default to post)
     const result = await enforce(toolName, toolInput, sources, state, {
       transcriptPath: event.transcript_path,
       sessionId: event.session_id,
@@ -60,22 +37,17 @@ export async function handlePostToolUse(event: HookEvent, projectRoot: string): 
     }
 
     if (!result.allowed) {
-      const reasons = result.violations.map((v) => v.message).join('; ');
-      return { decision: 'block', reason: reasons };
+      // Structure feedback as corrective guidance
+      const feedback = result.violations.map((v) => {
+        if (v.rule.requires_skill) {
+          return `This operation is in the domain of the "${v.rule.requires_skill}" skill. Run /${v.rule.requires_skill} first, then continue.`;
+        }
+        return v.message;
+      });
+      return { decision: 'block', reason: `[agent-ruler] Fix needed after ${toolName}:\n${feedback.join('\n')}` };
     }
   } catch (err) {
     console.error('[agent-ruler] Error in PostToolUse handler, failing open:', err);
   }
   return {};
-}
-
-/** Check if there's a recent pre-entry for this tool in the log (within last 5 entries) */
-function findLastPreEntry(log: EnforcementLogEntry[], toolName: string): EnforcementLogEntry | undefined {
-  const recent = log.slice(-5);
-  for (let i = recent.length - 1; i >= 0; i--) {
-    if (recent[i].hookEvent === 'pre' && recent[i].toolName === toolName) {
-      return recent[i];
-    }
-  }
-  return undefined;
 }

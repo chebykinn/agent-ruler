@@ -130,7 +130,7 @@ async function cmdEnforce(projectRoot: string, force: boolean): Promise<void> {
   const hooks = (settings.hooks || {}) as Record<string, unknown[]>;
   const agentRulerHook = { matcher: '*', hooks: [{ type: 'command', command: hookCmd }] };
 
-  for (const event of ['PreToolUse', 'PostToolUse', 'Stop'] as const) {
+  for (const event of ['SessionStart', 'UserPromptSubmit', 'PreToolUse', 'PostToolUse', 'Stop'] as const) {
     const existing = (hooks[event] || []) as Array<{ matcher: string; hooks: Array<{ command: string }> }>;
     const alreadyWired = existing.some((entry) =>
       entry.hooks?.some((h) => h.command.includes('agent-ruler'))
@@ -247,7 +247,7 @@ async function cmdResign(projectRoot: string): Promise<void> {
   const hooks = (settings.hooks || {}) as Record<string, unknown[]>;
   let removed = 0;
 
-  for (const event of ['PreToolUse', 'PostToolUse', 'Stop'] as const) {
+  for (const event of ['SessionStart', 'UserPromptSubmit', 'PreToolUse', 'PostToolUse', 'Stop'] as const) {
     const existing = (hooks[event] || []) as Array<{ hooks: Array<{ command: string }> }>;
     const filtered = existing.filter(
       (entry) => !entry.hooks?.some((h) => h.command.includes('agent-ruler'))
@@ -362,6 +362,8 @@ async function cmdReview(projectRoot: string, sessionIdOrPath: string): Promise<
 }
 
 async function cmdHook(projectRoot: string): Promise<void> {
+  const { handleSessionStart } = await import('./handlers/session-start');
+  const { handleUserPromptSubmit } = await import('./handlers/user-prompt-submit');
   const { handlePreToolUse } = await import('./handlers/pre-tool-use');
   const { handlePostToolUse } = await import('./handlers/post-tool-use');
   const { handleStop } = await import('./handlers/stop');
@@ -377,6 +379,12 @@ async function cmdHook(projectRoot: string): Promise<void> {
 
   let response = {};
   switch (event.hook_event_name) {
+    case 'SessionStart':
+      response = await handleSessionStart(event, projectRoot);
+      break;
+    case 'UserPromptSubmit':
+      response = await handleUserPromptSubmit(event, projectRoot);
+      break;
     case 'PreToolUse':
       response = await handlePreToolUse(event, projectRoot);
       break;

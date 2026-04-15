@@ -1,4 +1,6 @@
 import type { HookEvent, HookResponse } from './types';
+import { handleSessionStart } from './handlers/session-start';
+import { handleUserPromptSubmit } from './handlers/user-prompt-submit';
 import { handlePreToolUse } from './handlers/pre-tool-use';
 import { handlePostToolUse } from './handlers/post-tool-use';
 import { handleStop } from './handlers/stop';
@@ -19,6 +21,12 @@ async function main(): Promise<void> {
   let response: HookResponse = {};
 
   switch (event.hook_event_name) {
+    case 'SessionStart':
+      response = await handleSessionStart(event, projectRoot);
+      break;
+    case 'UserPromptSubmit':
+      response = await handleUserPromptSubmit(event, projectRoot);
+      break;
     case 'PreToolUse':
       response = await handlePreToolUse(event, projectRoot);
       break;

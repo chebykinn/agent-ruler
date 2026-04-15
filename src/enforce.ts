@@ -60,8 +60,8 @@ export async function enforce(
       if (!matchesTool(rule.tool_matcher, toolName)) continue;
       if (!isRuleActive(rule, state)) continue;
 
-      // Filter by hook_event — default is 'pre'
-      const ruleHook = rule.hook_event || 'pre';
+      // Filter by hook_event — default is 'post' (positive feedback loop)
+      const ruleHook = rule.hook_event || 'post';
       if (ruleHook !== 'both' && ruleHook !== currentHook) continue;
 
       // Skill gate: if skill already loaded, skip this gate entirely
